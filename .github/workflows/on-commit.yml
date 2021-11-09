@@ -1,0 +1,90 @@
+name: On Commit
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+env:
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_ICON: https://icons.iconarchive.com/icons/martz90/circle/256/android-icon.png
+  SLACK_TITLE: Commit status
+  SLACK_USERNAME: Emarsys SDK - Flutter
+  SLACK_WEBHOOK: ${{ secrets.SLACK_MOBILE_TEAM_CI_CHANNEL_WEBHOOK }}
+
+jobs:
+  android:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: set up JDK 1.11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 11
+          
+      - name: Setup flutter env
+        uses: subosito/flutter-action@v1
+        with:
+          flutter-version: "2.2.3"
+          channel: "stable"
+          
+      - name: Update dependencies
+        run: flutter pub get
+        
+      - name: Install Google Services JSON
+        uses: davidSchuppa/base64Secret-toFile-action@v1
+        with:
+          secret: ${{ secrets.GOOGLE_SERVICE_JSON_BASE64 }}
+          filename: google-services.json
+          destination-path: ./example/android/app/
+        
+      - name: Run Android unit tests with gradle
+        run: (cd example/android && ./gradlew clean build test -x lint)        
+        
+      # - name: Run tests
+      #   uses: reactivecircus/android-emulator-runner@v2
+      #   with:
+      #     api-level: 29
+      #     target: google_apis
+      #     script: cd example/android && (flutter drive --driver=test_driver/integration_test.dart --target=integration_test/emarsys_test.dart)
+                
+  ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Setup flutter env
+        uses: subosito/flutter-action@v1
+        with:
+          flutter-version: "2.2.3"
+          channel: "stable"
+        
+      - name: Open simulator
+        run: open /Applications/Xcode.app/Contents/Developer/Applications/Simulator.app/
+          
+      - name: Update dependencies
+        run: flutter pub get
+
+      - name: Remove old directories
+        run: rm -rf ~/tmp | rm -rf ~/Library/MobileDevice
+        shell: bash
+
+      - name: Install Dependencies
+        run: (cd example/ios && pod install --no-repo-update --verbose)
+        shell: bash
+
+      - name: Run Flutter Tests
+        run: flutter test
+
+      - name: Run iOS unit tests
+        run: xcodebuild -workspace ~/work/flutter-plugin-for-sap-emarsys-customer-engagement/flutter-plugin-for-sap-emarsys-customer-engagement/example/ios/Runner.xcworkspace -scheme flutter-plugin-ios-tests -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 12 Pro Max' test
+        
+      # - name: Run integration tests on iOS
+      #   if: always()
+      #   run: |
+      #     (cd example && flutter drive \
+      #       --driver=test_driver/integration_test.dart \
+      #       --target=integration_test/emarsys_test.dart)

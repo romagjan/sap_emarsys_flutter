@@ -1,0 +1,71 @@
+group 'com.emarsys.emarsys_sdk'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    ext.gradle_version = '7.0.1'
+    ext.kotlin_version = '1.5.30'
+    ext.agconnect_version = '1.6.0.300'
+    repositories {
+        google()
+        jcenter()
+        maven { url 'https://developer.huawei.com/repo/' }
+    }
+
+    dependencies {
+        classpath "com.android.tools.build:gradle:$gradle_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.huawei.agconnect:agcp:$agconnect_version"
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        mavenLocal()
+        google()
+        mavenCentral()
+        jcenter()
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion 30
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+
+        test.java.srcDirs += "src/test/kotlin"
+    }
+    defaultConfig {
+        minSdkVersion 21
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+dependencies {
+    ext.emarsys_sdk_version = '3.0.1'
+    ext.junit_version = '4.13.2'
+    ext.kotlintest_version = '3.4.2'
+    ext.mockk_version = '1.12.0'
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    api "com.emarsys:emarsys-sdk:$emarsys_sdk_version"
+    api "com.emarsys:emarsys-firebase:$emarsys_sdk_version"
+    api "com.emarsys:emarsys-huawei:$emarsys_sdk_version"
+
+    testImplementation "junit:junit:$junit_version"
+    testImplementation "io.kotlintest:kotlintest-runner-junit4:$kotlintest_version"
+    testImplementation "io.mockk:mockk:$mockk_version"
+}
